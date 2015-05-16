@@ -5,10 +5,27 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
+var passport = require('passport');
+var session = require('express-session');
+var localStrategy = require('passport-local').Strategy;
+var mongoose = require('mongoose');
+
 var routes = require('./routes/index');
 var users = require('./routes/users');
 
 var app = express();
+
+// Mongo setup
+var mongoURI = "mongodb://localhost:27017/prime_example_passport";
+var MongoDB = mongoose.connect(mongoURI).connection;
+
+MongoDB.on('error', function (err) {
+  console.log('mongodb connection error', err);
+});
+
+MongoDB.once('open', function () {
+  console.log('mongodb connection open');
+});
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -21,6 +38,22 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(session({
+  secret: 'secret',
+  key: 'user',
+  resave: true,
+  saveUninitialized: false,
+  cookie: { maxAge: 60000, secure: false }
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use('local', new localStrategy({ passReqToCallback : true, usernameField: 'username' },
+    function(req, username, password, done) {
+    }
+));
+
+
 
 app.use('/', routes);
 app.use('/users', users);
